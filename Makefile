@@ -9,3 +9,6 @@ build: fmt
 
 run-release: build
 	@./target/release/echo-server
+
+docker:
+	docker build -t echo-server .
