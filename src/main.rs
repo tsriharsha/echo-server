@@ -3,7 +3,8 @@ use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::{Json, Router, routing::get};
-use axum::http::HeaderMap;
+
+use axum::http::{HeaderMap};
 use axum::response::{IntoResponse, Redirect, Response};
 
 
@@ -12,13 +13,37 @@ use axum::response::{IntoResponse, Redirect, Response};
 #[tokio::main]
 async fn main() {
     let app = Router::new()
-        .route("/", get(|| async { Redirect::permanent("/echo") }))
-        .route("/echo", get(echo_request_headers));
+        .route("/", get(|| async { Redirect::permanent("/echo/headers") }))
+        .route("/echo/ip", get(echo_ip))
+        .route("/echo/github-url", get(github_url))
+        .route("/echo/headers", get(echo_request_headers));
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn fetch_header(headeres: HeaderMap, header_name: &str) -> String {
+    match headeres.get(header_name.to_string()) {
+        None => {
+            "Unknown".to_string()
+        }
+        Some(value) => {
+            // "Unknown".into_response()
+            String::from_utf8_lossy(value.as_bytes()).into_owned()
+        }
+    }
+}
+
+#[axum_macros::debug_handler]
+async fn echo_ip(headers: HeaderMap) -> Response {
+    fetch_header(headers, "x-forwarded-for").into_response()
+}
+
+#[axum_macros::debug_handler]
+async fn github_url() -> Response {
+    "https://github.com/tsriharsha/echo-server".into_response()
 }
 
 #[axum_macros::debug_handler]
