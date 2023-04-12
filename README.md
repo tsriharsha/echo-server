@@ -2,6 +2,8 @@
 
 Simple rust based echo server. It parrots your headers back to you
 
+**Hosted service is rate limited to 100 reqs/s!**
+
 ## Usage
 
 ```bash

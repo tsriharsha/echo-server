@@ -1,11 +1,15 @@
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use axum::{routing::get, Json, Router};
+use axum::error_handling::HandleErrorLayer;
+use axum::{routing::get, BoxError, Json, Router};
 
-use axum::http::HeaderMap;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
+use tower::buffer::BufferLayer;
+use tower::limit::RateLimitLayer;
+use tower::ServiceBuilder;
 
 #[tokio::main]
 async fn main() {
@@ -13,7 +17,19 @@ async fn main() {
         .route("/", get(|| async { Redirect::permanent("/echo/headers") }))
         .route("/echo/ip", get(echo_ip))
         .route("/echo/github-url", get(github_url))
-        .route("/echo/headers", get(echo_request_headers));
+        .route("/echo/headers", get(echo_request_headers))
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|err: BoxError| async move {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Unhandled error: {}", err),
+                    )
+                }))
+                .layer(BufferLayer::new(1024))
+                .layer(RateLimitLayer::new(100, Duration::from_secs(1))),
+        );
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
