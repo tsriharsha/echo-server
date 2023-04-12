@@ -1,14 +1,11 @@
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use axum::{Json, Router, routing::get};
+use axum::{routing::get, Json, Router};
 
-use axum::http::{HeaderMap};
+use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect, Response};
-
-
-
 
 #[tokio::main]
 async fn main() {
@@ -26,9 +23,7 @@ async fn main() {
 
 fn fetch_header(headeres: HeaderMap, header_name: &str) -> String {
     match headeres.get(header_name.to_string()) {
-        None => {
-            "Unknown".to_string()
-        }
+        None => "Unknown".to_string(),
         Some(value) => {
             // "Unknown".into_response()
             String::from_utf8_lossy(value.as_bytes()).into_owned()
@@ -65,10 +60,13 @@ async fn echo_request_headers(headers: HeaderMap) -> Response {
     header_hashmap.insert("purpose".to_string(), "Echo Headers".to_string());
     header_hashmap.insert("server".to_string(), "axum".to_string());
     header_hashmap.insert("version".to_string(), "0.1.0".to_string());
-    header_hashmap.insert("req_source_ip_address".to_string(),
-                          header_hashmap.get("x-forwarded-for")
-                              .unwrap_or(&"Unknown".to_string())
-                              .to_string());
+    header_hashmap.insert(
+        "req_source_ip_address".to_string(),
+        header_hashmap
+            .get("x-forwarded-for")
+            .unwrap_or(&"Unknown".to_string())
+            .to_string(),
+    );
 
     Json(header_hashmap).into_response()
 }
