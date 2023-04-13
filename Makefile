@@ -11,4 +11,7 @@ run-release: build
 	@./target/release/echo-server
 
 docker:
-	docker build -t echo-server .
+	@BUILDKIT_PROGRESS=plain docker build -t echo-server .
+
+docker-run:
+	docker run -it 3000:3000 echo-server
