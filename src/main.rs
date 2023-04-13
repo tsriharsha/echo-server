@@ -54,6 +54,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { Redirect::permanent("/echo/headers") }))
+        .route("/healthz", get(health))
         .route("/echo/ip", get(echo_ip))
         .route("/echo/ip/:some_id", get(get_ip_details))
         .route("/echo/ip-details/:some_id", get(get_ip_details))
@@ -83,7 +84,7 @@ async fn main() {
         )
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -98,6 +99,11 @@ fn fetch_header(headers: HeaderMap, header_name: &str) -> String {
             String::from_utf8_lossy(value.as_bytes()).into_owned()
         }
     }
+}
+
+#[axum_macros::debug_handler]
+async fn health() -> Response {
+    return "OK".clone().into_response();
 }
 
 #[axum_macros::debug_handler]
