@@ -85,7 +85,7 @@ async fn main() {
         .with_state(app_state);
 
     println!("Starting web server!");
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
