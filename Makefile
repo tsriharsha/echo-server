@@ -2,6 +2,7 @@ fmt:
 	@cargo fmt
 
 run: fmt
+	@cd static/databricks-templates && mkdocs build
 	@cargo run --bin echo-server
 
 build: fmt

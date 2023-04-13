@@ -8,10 +8,12 @@ RUN sed -i 's#src/main.rs#dummy.rs#' Cargo.toml
 RUN cargo build --release
 RUN sed -i 's#dummy.rs#src/main.rs#' Cargo.toml
 COPY src ./src
+COPY static ./static
 RUN cargo build --release
 
 FROM rust:1.68-slim
 COPY --from=builder /usr/src/echo-server/target/release/echo-server /usr/src/echo-server/target/release/echo-server
+COPY --from=builder /usr/src/echo-server/static /usr/src/echo-server/target/release/static
 RUN chmod +x /usr/src/echo-server/target/release/echo-server
 EXPOSE 3000
 CMD ["/usr/src/echo-server/target/release/echo-server"]

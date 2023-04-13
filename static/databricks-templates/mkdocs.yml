@@ -1,0 +1,30 @@
+site_name: Databricks Email Templates
+
+
+theme:
+  name: material
+  features:
+    - search.suggest
+    - search.highlight
+    - search.share
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - toc.follow
+    - navigation.top
+
+plugins:
+  - search:
+      lang: en
+  - macros
+  - mkdocs-video
+
+markdown_extensions:
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Email Templates:
+      - Performance:
+          - Spark Batch Job: performance/spark-job-template.md

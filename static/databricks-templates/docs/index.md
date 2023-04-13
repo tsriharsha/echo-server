@@ -1,0 +1,7 @@
+---
+hide:
+  - navigation
+---
+
+
+# Home page
