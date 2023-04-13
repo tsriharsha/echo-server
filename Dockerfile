@@ -1,6 +1,4 @@
 FROM rust:latest as builder
-RUN apt-get update
-RUN apt-get install -y pkg-config libssl-dev
 WORKDIR /usr/src/echo-server
 COPY dummy.rs .
 COPY Cargo.toml .
