@@ -3,12 +3,11 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use axum::body::{Empty, Full};
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::{Path, State};
-use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::{body, routing::get, BoxError, Json, Router};
+use axum::{routing::get, BoxError, Json, Router};
 use lru_time_cache::LruCache;
 use reqwest;
 use reqwest::Client;
@@ -22,17 +21,12 @@ use tracing::{info, Span};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use include_dir::{include_dir, Dir};
-
 #[derive(Clone)]
 struct AppState {
     // We require unique usernames. This tracks which usernames have been taken.
     ip_lookup_cache: Arc<Mutex<LruCache<String, String>>>,
     client: Client,
-    docs_app_prefix: String,
 }
-
-static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/static/databricks-templates/site");
 
 #[tokio::main]
 async fn main() {
@@ -56,7 +50,6 @@ async fn main() {
     let app_state = AppState {
         ip_lookup_cache: Arc::new(lru_time_cache),
         client: Client::new(),
-        docs_app_prefix: "app".to_string(),
     };
 
     let app = Router::new()
@@ -67,7 +60,6 @@ async fn main() {
         .route("/echo/cache-size", get(cache_size))
         .route("/echo/github-url", get(github_url))
         .route("/echo/headers", get(echo_request_headers))
-        .route("/static/*path", get(static_app_path))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|err: BoxError| async move {
@@ -91,57 +83,11 @@ async fn main() {
         )
         .with_state(app_state);
 
-    // let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-#[axum_macros::debug_handler]
-async fn static_app_path(
-    Path(path): Path<String>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    let path = path.trim_start_matches('/');
-    let prefix = state.docs_app_prefix.clone() + "/";
-    match path.starts_with(prefix.clone().as_str()) {
-        false => {
-            return Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(body::boxed(Empty::new()))
-                .unwrap()
-        }
-        _ => {}
-    }
-    let path = path.clone().strip_prefix(prefix.clone().as_str()).unwrap();
-    let path = match path.clone().is_empty() {
-        true => "index.html".to_string(),
-        false => {
-            let res = path.ends_with("/");
-            match res {
-                true => format!("{}/index.html", path.clone()),
-                false => path.to_string(),
-            }
-        }
-    };
-    let mime_type = mime_guess::from_path(path.clone()).first_or_text_plain();
-
-    match STATIC_DIR.get_file(path) {
-        None => Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(body::boxed(Empty::new()))
-            .unwrap(),
-        Some(file) => Response::builder()
-            .status(StatusCode::OK)
-            .header(
-                header::CONTENT_TYPE,
-                HeaderValue::from_str(mime_type.as_ref()).unwrap(),
-            )
-            .body(body::boxed(Full::from(file.contents())))
-            .unwrap(),
-    }
 }
 
 fn fetch_header(headers: HeaderMap, header_name: &str) -> String {
